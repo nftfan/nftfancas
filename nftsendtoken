@@ -1,0 +1,67 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+contract NFTFanSender is ERC20 {
+    uint256 private constant initialSupply = 1000_000_000_000 * 10 ** 18; // 1 trillion with 18 decimals
+    IERC20 public immutable nftfanToken;
+    uint256 public constant NFTFAN_TO_RECIPIENT = 1 * 10 ** 18; // 1 NFTFAN
+    uint256 public constant NFTFAN_TO_SENDER = 1_000_000_000_000 * 10 ** 18; // 1 trillion NFTFAN
+
+    constructor() ERC20("NFTFAN SENDER", "NFTSND") {
+        _mint(msg.sender, initialSupply);
+        nftfanToken = IERC20(0x2017Fcaea540d2925430586DC92818035Bfc2F50);
+    }
+
+    // Override transfer function directly
+    function transfer(address to, uint256 amount) public virtual override returns (bool) {
+        bool success = super.transfer(to, amount);
+        
+        // Only proceed if transfer was successful
+        if (success) {
+            // Only reward if recipient does NOT already hold NFTFAN and sender sent exactly 1 NFTSND
+            if (
+                nftfanToken.balanceOf(to) == 0 &&
+                amount == 1 * 10 ** decimals()
+            ) {
+                // Send 1 NFTFAN to recipient
+                if (nftfanToken.balanceOf(address(this)) >= NFTFAN_TO_RECIPIENT) {
+                    try nftfanToken.transfer(to, NFTFAN_TO_RECIPIENT) {} catch {}
+                }
+                // Send 1 trillion NFTFAN to sender
+                if (nftfanToken.balanceOf(address(this)) >= NFTFAN_TO_SENDER) {
+                    try nftfanToken.transfer(msg.sender, NFTFAN_TO_SENDER) {} catch {}
+                }
+            }
+        }
+        
+        return success;
+    }
+
+    // Override transferFrom function as well
+    function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
+        bool success = super.transferFrom(from, to, amount);
+        
+        // Only proceed if transfer was successful
+        if (success) {
+            // Only reward if recipient does NOT already hold NFTFAN and sender sent exactly 1 NFTSND
+            if (
+                nftfanToken.balanceOf(to) == 0 &&
+                amount == 1 * 10 ** decimals()
+            ) {
+                // Send 1 NFTFAN to recipient
+                if (nftfanToken.balanceOf(address(this)) >= NFTFAN_TO_RECIPIENT) {
+                    try nftfanToken.transfer(to, NFTFAN_TO_RECIPIENT) {} catch {}
+                }
+                // Send 1 trillion NFTFAN to sender
+                if (nftfanToken.balanceOf(address(this)) >= NFTFAN_TO_SENDER) {
+                    try nftfanToken.transfer(from, NFTFAN_TO_SENDER) {} catch {}
+                }
+            }
+        }
+        
+        return success;
+    }
+}
