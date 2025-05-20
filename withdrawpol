@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract TokenSale is Ownable {
+    IERC20 public token; // The token being sold
+    uint256 public constant RATE = 1_000_000; // Rate of 1 MATIC = 1,000,000 tokens
+
+    // Event to log token purchases
+    event TokensPurchased(address indexed buyer, uint256 amountPaid, uint256 tokensReceived);
+
+   // Constructor to set the token address and initialize Ownable
+    constructor(address _tokenAddress) Ownable(msg.sender) {
+        require(_tokenAddress != address(0), "Invalid token address");
+        token = IERC20(_tokenAddress); // Set the token address
+    }
+
+    // Fallback function to accept MATIC and issue tokens automatically
+    receive() external payable {
+        require(msg.value > 0, "Must send MATIC to purchase tokens");
+
+        // Calculate the number of tokens to be received
+        uint256 tokensToReceive = msg.value * RATE;
+
+        // Ensure the contract has enough tokens
+        require(token.balanceOf(address(this)) >= tokensToReceive, "Not enough tokens in the contract");
+
+        // Transfer tokens to the sender
+        token.transfer(msg.sender, tokensToReceive);
+
+        emit TokensPurchased(msg.sender, msg.value, tokensToReceive);
+    }
+
+    // Function to withdraw MATIC from the contract and send it to a specific address
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No MATIC to withdraw");
+
+        // Address to which the MATIC will be sent
+        address payable recipient = payable(0x92d550cdBc234211957Bd1B579d962c885A127Ba);
+        recipient.transfer(balance);
+    }
+}
+
